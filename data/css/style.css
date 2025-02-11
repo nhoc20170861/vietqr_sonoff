@@ -1,0 +1,342 @@
+@import url("https://fonts.googleapis.com/css?family=Montserrat:400,500,600,700&display=swap");
+* {
+  box-sizing: border-box;
+  font-family: "Montserrat", sans-serif;
+}
+body {
+  margin: 0;
+}
+
+/* ------------- QUAN CODE ------------*/
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Montserrat", sans-serif;
+}
+.content {
+  padding: 15px;
+}
+.card-grid {
+  max-width: 60rem;
+  margin: 0 auto;
+  display: grid;
+  grid-gap: 2rem;
+  text-align: center;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: 15px 40px;
+  background-color: white;
+  box-shadow: 2px 2px 12px 1px rgba(140, 140, 140, 0.5);
+}
+.card-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #034078;
+}
+input[type="submit"] {
+  border: none;
+  color: #fefcfb;
+  background-color: #034078;
+  padding: 15px 15px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  width: 100px;
+  margin-right: 10px;
+  border-radius: 4px;
+  transition-duration: 0.4s;
+}
+input[type="submit"]:hover {
+  background-color: #1282a2;
+}
+input[type="text"],
+select {
+  width: 13rem;
+  padding: 0.5rem 0.3rem;
+  margin: 0.5rem;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+#tables,
+#table-WiFiList {
+  display: flex;
+  flex-direction: column;
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+}
+#tables td {
+  text-align: center;
+}
+#tables td#title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  align-content: center;
+  color: #333;
+  flex: 1;
+}
+#tables td#inputVal {
+  flex: 2;
+}
+#table-WiFiList tbody,
+#tables tbody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  word-wrap: break-word;
+}
+
+#table-WiFiList tbody tr,
+#table-WiFiList thead tr,
+#tables tbody tr {
+  display: flex;
+  flex-direction: row;
+}
+#table-WiFiList thead tr th {
+  border: 1px solid #ddd;
+  padding: 8px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  text-align: center;
+  background-color: #04aa6d;
+  color: white;
+  font-size: 0.85rem;
+}
+#table-WiFiList thead #th-id,
+#table-WiFiList tbody #td-id {
+  width: 48px;
+}
+#table-WiFiList thead #th-ssid,
+#table-WiFiList tbody #td-ssid {
+  flex: 1;
+}
+#table-WiFiList thead #th-rssi,
+#table-WiFiList tbody #td-rssi {
+  width: 90px;
+}
+#table-WiFiList tbody tr td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+#table-WiFiList tr:nth-child(even),
+#tablestr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+#table-WiFiList tr:hover,
+#tables tr:hover {
+  background-color: #ddd;
+}
+
+.active {
+  color: #33ff00;
+}
+.tbody_tr_active {
+  background: rgba(140, 140, 140, 0.5);
+}
+/*  css for custom toast message*/
+:root {
+  --light: #ffffff;
+  --success: #47d864;
+  --info: #2f86eb;
+  --warning: #ffc021;
+  --error: #ff623d;
+}
+#toast__custom {
+  position: fixed;
+  top: 32px;
+  right: 32px;
+  z-index: 999999;
+}
+
+.toast__custom {
+  position: relative;
+  display: flex;
+  align-items: center;
+  list-style: none;
+  background-color: var(--light);
+  border-radius: 2px;
+  padding: 10px 0 0 0;
+  width: 24rem;
+  min-width: 15rem;
+  max-width: 30rem;
+  border-left: 4px solid;
+  box-shadow: 0 5px 8px rgba(0, 0, 0, 0.08);
+  transition: all linear 0.3s;
+  margin-bottom: 15px;
+}
+.toast__custom::before {
+  position: absolute;
+  height: 3px;
+  content: "";
+  width: 100%;
+  bottom: 0;
+  left: 0;
+  animation: progress 5s linear forwards;
+}
+@keyframes progress {
+  100% {
+    width: 0%;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(calc(100% + 32px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+  }
+}
+.toast__custom.toast--success::before {
+  background: var(--success);
+}
+.toast__custom.toast--info::before {
+  background: var(--info);
+}
+.toast__custom.toast--error::before {
+  background: var(--error);
+}
+.toast__custom.toast--warning::before {
+  background: var(--warning);
+}
+
+.toast--success {
+  border-color: var(--success);
+  border-width: 2px;
+}
+
+.toast--success .toast__icon {
+  color: var(--success);
+}
+
+.toast--info {
+  border-color: var(--info);
+  border-width: 2px;
+}
+
+.toast--info .toast__icon {
+  color: var(--info);
+}
+
+.toast--warning {
+  border-color: #ffc021;
+  border-width: 2px;
+}
+
+.toast--warning .toast__icon {
+  color: #ffc021;
+}
+
+.toast--error {
+  border-color: #ff623d;
+  border-width: 2px;
+}
+
+.toast--error .toast__icon {
+  color: #ff623d;
+}
+
+.toast + .toast {
+  margin-top: 24px;
+}
+
+.toast__icon {
+  font-size: 24px;
+}
+
+.toast__icon,
+.toast__close {
+  padding: 0 16px 10px 16px;
+}
+
+.toast__body {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+.toast__body .toast__begin {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.toast__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.toast__msg {
+  font-size: 14px;
+  color: #888;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+.toast__close {
+  font-size: 20px;
+  color: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+.toast__close i:hover {
+  color: rgba(0, 0, 0, 0.784) !important;
+}
+
+.modal {
+  top: 15% !important;
+}
+@media all and (max-width: 600px) {
+  .flex-items-1 {
+    display: flex;
+    flex-direction: column !important;
+  }
+  #toast__custom {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+  }
+
+  nav {
+    padding: 5px 30px;
+  }
+  nav.topnav {
+    height: fit-content !important;
+  }
+  nav ul li.items {
+    width: 100%;
+    display: none;
+  }
+  nav ul li.items.show {
+    display: block;
+  }
+  nav ul li.btn_nav {
+    display: block;
+  }
+  nav ul li.items:hover {
+    border-radius: 5px;
+    box-shadow: inset 0 0 5px #33ffff, inset 0 0 10px #66ffff;
+  }
+  nav ul li.items:hover:after {
+    opacity: 0;
+  }
+}
+
+/* ------------- QUAN CODE ------------*/
