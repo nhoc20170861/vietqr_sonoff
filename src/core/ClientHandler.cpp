@@ -1,33 +1,30 @@
 #include "ClientHandler.h"
 #include <libb64/cencode.h>
 // #include <ArduinoJson.h>
-#include "mbedtls/md5.h"
-#include "esp_mac.h"
+#include "logger.h"
+#include <Hash.h>
+#include <ESP8266WiFi.h>
 #define TAG "ClientHandler"
 ClientHandler clientHandler;
 
 // Calculate MD5
 static bool getMD5(uint8_t *data, uint16_t len, char *output)
-{ // 33 bytes or more
+{  if (output == NULL) return false; // Prevent null pointer issues
 
-    mbedtls_md5_context _ctx;
+    MD5Builder md5;
+    md5.begin();
+    md5.add(data, len);
+    md5.calculate();
 
-    uint8_t i;
-    uint8_t *_buf = (uint8_t *)malloc(16);
-    if (_buf == NULL)
-        return false;
-    memset(_buf, 0x00, 16);
+    uint8_t hash[16]; // Use stack memory instead of malloc
+    md5.getBytes(hash);
 
-    mbedtls_md5_init(&_ctx);
-    mbedtls_md5_starts_ret(&_ctx);
-    mbedtls_md5_update_ret(&_ctx, data, len);
-    mbedtls_md5_finish_ret(&_ctx, _buf);
-
-    for (i = 0; i < 16; i++)
+    for (uint8_t i = 0; i < 16; i++)
     {
-        sprintf(output + (i * 2), "%02x", _buf[i]);
+        sprintf(output + (i * 2), "%02x", hash[i]); // Convert to hex
     }
-    free(_buf);
+
+    output[32] = '\0'; // Ensure null-termination
     return true;
 }
 
@@ -40,6 +37,7 @@ static String stringMD5(const String &in)
     free(out);
     return res;
 }
+
 ClientHandler::ClientHandler()
 {
 }
@@ -48,7 +46,7 @@ void ClientHandler::init()
 {
     char Mac_address[18];
     uint8_t mac[8];
-    esp_efuse_mac_get_default(mac);
+    WiFi.macAddress(mac);
     sprintf(Mac_address, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     _macAddr = String(Mac_address);
     log_i("Mac_address, %s\n", Mac_address);
@@ -117,14 +115,14 @@ String ClientHandler::HttpGet(String url, const char *authenType)
     if ((WiFi.status() == WL_CONNECTED))
     {
         HTTPClient http;
-        http.begin(url);
-        http.setAuthorizationType(authenType);
+        WiFiClient client;
+        http.begin(client, url);
         http.setReuse(false);
-        if (authenType == "Basic")
+        if (strcmp(authenType, "Basic") == 0)
         {
             http.setAuthorization(_base64Authorization.c_str());
         }
-        else if (authenType == "Bearer")
+        else if (strcmp(authenType, "Bearer") == 0)
         {
             http.setAuthorization(_accessToken.c_str());
         }
@@ -143,7 +141,6 @@ String ClientHandler::HttpGet(String url, const char *authenType)
             Json = "error";
         }
         http.end();
-        vTaskDelay(50);
         return Json;
     }
     return "WiFiLost";
@@ -156,20 +153,19 @@ String ClientHandler::HttpPost(String url, String data = "", const char *authenT
     {
         HTTPClient http;
         http.setReuse(false);
-        http.begin(url);
+        WiFiClient client;
+        http.begin(client, url);
         http.addHeader("Content-Type", "application/json");
         // Calculate authorization
         String authen;
-        http.setAuthorizationType(authenType);
-        if (authenType == "Basic")
+        if (strcmp(authenType, "Basic") == 0)
         {
-            http.setAuthorization(_base64Authorization.c_str());
+            http.addHeader("Authorization", "Basic " + _base64Authorization);
         }
-        else if (authenType == "Bearer")
+        else if (strcmp(authenType, "Bearer") == 0)
         {
-            http.setAuthorization(_accessToken.c_str());
+            http.addHeader("Authorization", "Bearer " + _accessToken);
         }
-
         // log_i("payload %s \n", data.c_str());
         int httpCode = http.POST(data);
 
@@ -185,7 +181,6 @@ String ClientHandler::HttpPost(String url, String data = "", const char *authenT
             Json = "error";
         }
         http.end();
-        vTaskDelay(50);
         return Json;
     }
     return "WiFiLost";
@@ -196,7 +191,8 @@ String ClientHandler::HttpDelete(String url)
     if ((WiFi.status() == WL_CONNECTED))
     {
         HTTPClient http;
-        http.begin(url);
+        WiFiClient client;
+        http.begin(client, url);
         int httpCode = http.sendRequest("Delete");
         String Json = "";
         if (httpCode > 0)

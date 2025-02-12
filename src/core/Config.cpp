@@ -5,53 +5,18 @@ Config config;
 String Config::loadWIFICredentialEEPROM()
 {
     String wifiCredential{""};
-    int passAddrOffset = readStringFromEEPROM(EEPROM_ADDR_WIFI_CREDENTIAL, &wifiCredential);
+    (void)readStringFromEEPROM(EEPROM_ADDR_WIFI_CREDENTIAL, &wifiCredential);
     return wifiCredential;
 }
 void Config::saveWIFICredentialEEPROM(String data)
 {
-    int ssidAddrOffset = writeStringToEEPROM(EEPROM_ADDR_WIFI_CREDENTIAL, data);
+    (void)writeStringToEEPROM(EEPROM_ADDR_WIFI_CREDENTIAL, data);
     EEPROM.commit();
 }
 void Config::init()
 {
-    if (!EEPROM.begin(EEPROM_SIZE))
-    {
-        delay(1000);
-        ESP.restart();
-    }
-    int val1 = EEPROM.readInt(EEPROM_ADDR_BRIGHTNESS_LEVEL);
-    int val2 = EEPROM.readInt(EEPROM_ADDR_VOLUME_LEVEL);
-    if (val1 > 100 || val1 <= 0 || val2 > 100 || val2 <= 0)
-    {
-        EEPROM.writeInt(EEPROM_ADDR_BRIGHTNESS_LEVEL, brightness_lv);
-        EEPROM.writeInt(EEPROM_ADDR_VOLUME_LEVEL, volume_lv);
-        EEPROM.commit();
-    }
-
-    brightness_lv = EEPROM.readInt(EEPROM_ADDR_BRIGHTNESS_LEVEL);
-    volume_lv = EEPROM.readInt(EEPROM_ADDR_VOLUME_LEVEL);
-    // log_i("brightness_lv %d, volume_lv %d \n", brightness_lv, volume_lv);
-
-    mFileManager.init();
-    // File filePayMentInfo = LittleFS.open(paymentInfoPath);
-    // if (!filePayMentInfo || filePayMentInfo.isDirectory())
-    // {
-    //     Serial.println("- failed to open file for reading");
-    //     return;
-    // }
-    // DeserializationError error = deserializeJson(paymenInfoJson, filePayMentInfo);
-    // if (error)
-    // {
-    //     Serial.println("error...");
-    // }
-    // else
-    // {
-    //     Serial.println("Another winner!");
-    //     serializeJsonPretty(paymenInfoJson, Serial);
-    // }
-    // Serial.println("");
-    // filePayMentInfo.close();
+    EEPROM.begin(EEPROM_SIZE);
+    delay(1000);
 }
 
 template <class T>
@@ -75,12 +40,6 @@ int Config::eepromRead(int ee, T &value)
     return i;
 }
 
-// bool Config::_sdBegin()
-// {
-//     bool out = false;
-//     out = SD.begin(); // CS_pin : GPIO5
-//     return out;
-// }
 
 int Config::writeStringToEEPROM(int addrOffset, const String &strToWrite)
 {

@@ -98,7 +98,7 @@ void FileManager::appendFile(const char *path, const char *message)
 {
   // log_i("Appending to file: %s\r\n", path);
 
-  File file = LittleFS.open(path, LFS_O_APPEND);
+  File file = LittleFS.open(path, "a");
   if (!file)
   {
     // Serial.println("- failed to open file for appending");

@@ -3,8 +3,8 @@
 
 #include <PubSubClient.h>
 #include "ArduinoJson.h"
-// Globals
-static SemaphoreHandle_t mutex;
+#include "logger.h"
+
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -15,120 +15,7 @@ const int daylightOffset_sec = 0;
 unsigned long lastTime = 0;
 unsigned long timerDelay = 60 * 1000;
 // static lv_obj_t *ui_dynamicQR;
-static lv_obj_t *ui_staticQR;
-static lv_obj_t *deviceInfoList;
 
-void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
-{
-  uint32_t w = (area->x2 - area->x1 + 1);
-  uint32_t h = (area->y2 - area->y1 + 1);
-
-  tft.startWrite();
-  tft.setAddrWindow(area->x1, area->y1, w, h);
-  tft.pushColors((uint16_t *)&color_p->full, w * h, true);
-  tft.endWrite();
-
-  lv_disp_flush_ready(disp);
-}
-
-/*Read the touch*/
-void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
-{
-  if (touchscreen.touched())
-  {
-    TS_Point p = touchscreen.getPoint();
-    // Some very basic auto calibration so it doesn't go out of range
-    if (p.x < touchScreenMinimumX)
-      touchScreenMinimumX = p.x;
-    if (p.x > touchScreenMaximumX)
-      touchScreenMaximumX = p.x;
-    if (p.y < touchScreenMinimumY)
-      touchScreenMinimumY = p.y;
-    if (p.y > touchScreenMaximumY)
-      touchScreenMaximumY = p.y;
-    // Map this to the pixel position
-    data->point.x = map(p.x, touchScreenMinimumX, touchScreenMaximumX, 1, SCREEN_WIDTH);  /* Touchscreen X calibration */
-    data->point.y = map(p.y, touchScreenMinimumY, touchScreenMaximumY, 1, SCREEN_HEIGHT); /* Touchscreen Y calibration */
-    data->state = LV_INDEV_STATE_PR;
-
-    // Serial.print("Touch x ");
-    // Serial.print(data->point.x);
-    // Serial.print(" y ");
-    // Serial.println(data->point.y);
-  }
-  else
-  {
-    data->state = LV_INDEV_STATE_REL;
-  }
-}
-
-void IRAM_ATTR isr()
-{
-  ledcWrite(ledChannel, ledPin_state ? 0 : 255);
-  ledPin_state = !ledPin_state;
-}
-
-static int countNumberShowDynmicQR = 1;
-static int countNumberShowStaticQR = 1;
-void switchToStaticQR(bool isQrCertificate, const char *qrStaticData)
-{
-  if (!isQrCertificate)
-  {
-    lv_label_set_text(ui_SoTaiKhoanStaticQR, clientHandler.getBankAccount().c_str());
-    lv_label_set_text(ui_ChuTaiKhoanStaticQR, clientHandler.getUserBankName().c_str());
-    lv_label_set_text(ui_TerminalName, clientHandler.getTerminalName().c_str());
-    // lv_label_set_text(ui_TerminalCode, clientHandler.getTerminalCode().c_str());
-    _ui_flag_modify(ui_ImageBanking, LV_OBJ_FLAG_HIDDEN, _UI_MODIFY_FLAG_REMOVE);
-    if (clientHandler.getBankCode() != "MB")
-    {
-      lv_img_set_src(ui_ImageBanking, &ui_img_logo_bidv__h20_png);
-      lv_img_set_src(ui_LogoBankUser1, &ui_img_logo_bidv__h20_png);
-    }
-  }
-  if (countNumberShowStaticQR == 1)
-  {
-    if (ui_staticQR != nullptr)
-    {
-      lv_obj_del(ui_staticQR);
-    }
-    ui_staticQR = createQrCode(qrStaticData, ui_ContainerStaticQR, 175);
-    _ui_screen_change(&ui_StaticQR, LV_SCR_LOAD_ANIM_FADE_ON, 50, 400, &ui_StaticQR_screen_init);
-    countNumberShowStaticQR++;
-  }
-  else
-  {
-    lv_qrcode_update(ui_staticQR, qrStaticData, strlen(qrStaticData));
-    // log_i("ui_staticQR update");
-  }
-}
-
-void switchToDynamicQR(JSONVar &paymentInfo)
-{
-  transactionReceiveIdQrDynamic = paymentInfo["transactionReceiveId"];
-  String lb_AmoutVale = String(static_cast<const char *>(paymentInfo["amount"])) + " VND";
-  lv_label_set_text(ui_AmountValue, lb_AmoutVale.c_str());
-  lv_label_set_text(ui_SoTaiKhoanDynamicQR, clientHandler.getBankAccount().c_str());
-  lv_label_set_text(ui_ChuTaiKhoanDynamicQR, clientHandler.getUserBankName().c_str());
-  // log_i("currHeap: %d \n", ESP.getFreeHeap());
-  if (countNumberShowDynmicQR == 1)
-  {
-    if (ui_dynamicQR != nullptr)
-    {
-      lv_obj_del(ui_dynamicQR);
-    }
-    ui_dynamicQR = createQrCode(static_cast<const char *>(paymentInfo["qrCode"]), ui_ContainerQRD, 178, lv_color_hex(0xE6B400), false);
-    _ui_screen_change(&ui_DynamicQR, LV_SCR_LOAD_ANIM_FADE_ON, 50, 400, &ui_DynamicQR_screen_init);
-    countNumberShowDynmicQR++;
-  }
-  else
-  {
-    lv_qrcode_update(ui_dynamicQR, static_cast<const char *>(paymentInfo["qrCode"]), strlen(static_cast<const char *>(paymentInfo["qrCode"])));
-    // log_i("qrdynamic update ");
-  }
-
-  // _ui_flag_modify(ui_TerminalNameDyn, LV_OBJ_FLAG_HIDDEN, _UI_MODIFY_FLAG_TOGGLE);
-  // _ui_flag_modify(ui_TerminalCodeDyn, LV_OBJ_FLAG_HIDDEN, _UI_MODIFY_FLAG_TOGGLE);
-}
 
 void storePaymentInfo(String data, bool isTheFirstTime = false)
 {
@@ -186,52 +73,9 @@ void storePaymentInfo(String data, bool isTheFirstTime = false)
 void setup()
 {
   Serial.begin(115200);
-  // Create mutex before starting tasks
-  mutex = xSemaphoreCreateMutex();
-
-  // Start the tft display
-  tft.init();
-  tft.setRotation(0);
-  // Clear the screen before writing to it
-  tft.fillScreen(TFT_WHITE);
-  tft.setTextColor(TFT_BLACK, TFT_WHITE);
-
-  // Start the SPI for the touchscreen and init the touchscreen
-  touchscreenSPI.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS);
-  touchscreen.begin(touchscreenSPI);
-  touchscreen.setRotation(0);
-
-  lv_init();
-  lv_disp_draw_buf_init(&draw_buf, buf, NULL, SCREEN_WIDTH * 10);
-
-  /*Initialize the display*/
-  static lv_disp_drv_t disp_drv;
-  lv_disp_drv_init(&disp_drv);
-  /*Change the following line to your display resolution*/
-  disp_drv.hor_res = SCREEN_WIDTH;
-  disp_drv.ver_res = SCREEN_HEIGHT;
-  disp_drv.flush_cb = my_disp_flush;
-  disp_drv.draw_buf = &draw_buf;
-  lv_disp_drv_register(&disp_drv);
-
-  /*Initialize the (dummy) input device driver*/
-  static lv_indev_drv_t indev_drv;
-  lv_indev_drv_init(&indev_drv);
-  indev_drv.type = LV_INDEV_TYPE_POINTER;
-  indev_drv.read_cb = my_touchpad_read;
-  lv_indev_drv_register(&indev_drv);
-  ui_init();
-  lv_label_set_text(ui_settingLable2, LV_SYMBOL_SETTINGS);
-  lv_label_set_text(ui_btnGoHomeLable, LV_SYMBOL_HOME);
-  lv_label_set_text(ui_LableBtnPlayAudio, LV_SYMBOL_AUDIO);
-  lv_label_set_text(ui_LableBtnResetWiFi, LV_SYMBOL_WIFI);
-  lv_label_set_text(ui_LabelBrightNess, LV_SYMBOL_CHARGE);
-  lv_label_set_text(ui_LBVolume, LV_SYMBOL_VOLUME_MID);
-  lv_label_set_text(ui_LableBtnResetAccount, LV_SYMBOL_REFRESH);
-
+  
   config.init();
-  lv_slider_set_value(ui_BrightnessSlider, config.brightness_lv, LV_ANIM_OFF);
-  lv_slider_set_value(ui_VolumeSlider, config.volume_lv, LV_ANIM_OFF);
+
   Serial.println(F("Setup done!"));
 
   // delete old config
@@ -248,44 +92,32 @@ void setup()
     // log_i("getStaticQR %s", clientHandler.getStaticQR().c_str());
     isSyncToServer = GET_STATIC_QR_DONE;
   }
-  audioInit();
-  networkConnector();
-  startMqttClientTask();
+ 
+
 }
 
 void loop()
 {
-  lv_task_handler();
-  vTaskDelay(10);
 }
 
 // =========================== define function ==================
 
 void TaskConnectWiFi(void *pvParameters)
 {
-  // Take the mutex
-  // audioConnecttoSD("/SamplesMP3/WelcomeVoice.mp3");
-  xSemaphoreTake(mutex, portMAX_DELAY);
+
   wifiManager.loadFromNVS();
-  vTaskDelay(200);
+    delay(200);
 
   // Phát audio welcome
   if (wifiManager.connectWiFi())
   {
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-    timerApi = lv_timer_create(timerApi_handler, 1000, NULL);
-    lv_label_set_text(ui_WiFiStatus, LV_SYMBOL_WIFI);
-    deviceInfoList = lv_create_list_deviceInfo(ui_ContainerList);
-
+   
     String boxId = clientHandler.getBoxId();
     // log_i("boxId: %s \n", boxId.c_str());
 
     if (boxId != "" && boxId != "None" && clientHandler.getBankAccount() != "" && clientHandler.getBankCode() != "")
     {
-      lv_label_set_text(ui_LinkWebSite, clientHandler.getHomePage().c_str());
-      // log_i("syncToserver Sucessfully, switch to static qrcode");
-      lv_list_add_btn(deviceInfoList, NULL, String("TerCode: " + clientHandler.getTerminalCode()).c_str());
-      switchToStaticQR(false, clientHandler.getStaticQR().c_str());
     }
     else if (clientHandler.getBankAccount() == "" && clientHandler.getBankCode() == "")
     {
@@ -296,55 +128,26 @@ void TaskConnectWiFi(void *pvParameters)
       if (qrCertificate != "" && qrCertificate != "None")
       {
         isSyncToServer = GET_QR_CERTI_DONE;
-        lv_label_set_text(ui_SoTaiKhoanStaticQR, "Quét mã QR bằng ứng dụng");
-        lv_label_set_text(ui_ChuTaiKhoanStaticQR, "VietQR để kích hoạt");
-        switchToStaticQR(true, clientHandler.getQrCertificate().c_str());
+      
       }
     }
     // log_i("after if heep %d \n", ESP.getFreeHeap());
-    vTaskDelay(20);
+    delay(20);
 
     // vTaskResume(ntTaskMqttClient);
     startWebServer();
-    xSemaphoreGive(mutex);
-    wifiManager.autoReconnectWiFi();
+   // wifiManager.autoReconnectWiFi();
   }
   else
   {
-    _ui_flag_modify(ui_Spinner2, LV_OBJ_FLAG_HIDDEN, _UI_MODIFY_FLAG_TOGGLE);
     Serial.println("Start WiFiManager");
     wifiManager.status = true;
     wifiManager.startAP();
     // lv_label_set_text(ui_WiFiStatus, "");
   }
-  vTaskDelete(NULL);
+
 }
 
-void networkConnector()
-{
-  xTaskCreatePinnedToCore(
-      TaskConnectWiFi,       /* Task function. */
-      "TaskConnectWiFi",     /* name of task. */
-      1024 * 4,              /* Stack size of task (byte in ESP32) */
-      NULL,                  /* parameter of the task */
-      4,                     /* priority of the task */
-      &ntConnectTaskHandler, /* Task handle */
-      1);                    /* Run on one core*/
-}
-
-void startMqttClientTask()
-{
-  xTaskCreatePinnedToCore(
-      TaskMqttClient,    /* Task function. */
-      "TaskMqttClient",  /* name of task. */
-      1024 * 5,          /* Stack size of task (byte in ESP32) */
-      NULL,              /* parameter of the task */
-      2,                 /* priority of the task */
-      &ntTaskMqttClient, /* Task handle */
-      1);                /* Run on one core*/
-
-  // vTaskSuspend(ntTaskMqttClient);
-}
 
 void callbackMqtt(char *topic, byte *payload, unsigned int length)
 {
@@ -374,7 +177,6 @@ void callbackMqtt(char *topic, byte *payload, unsigned int length)
       clientHandler.setQrCertificate(static_cast<const char *>(jsondata["qrCertificate"]));
       config.writeQrCertificate(clientHandler.getQrCertificate().c_str());
       config.writeBoxId(clientHandler.getBoxId().c_str());
-      switchToStaticQR(true, clientHandler.getQrCertificate().c_str());
       isSyncToServer = GET_BOXID_DONE;
     }
     return;
@@ -390,51 +192,31 @@ void callbackMqtt(char *topic, byte *payload, unsigned int length)
     {
       // Thông biến động số dư
       const char *amount = (const char *)jsondata["amount"];
-      lv_label_set_text(ui_SoTienDaThanhToan, amount);
-      if (atTheQrStaticScreen)
-      {
-        showModalNotifyTranstion(amount);
-      }
-      else
-      {
-        _ui_screen_change(&ui_PaymentSuccess_S5, LV_SCR_LOAD_ANIM_FADE_ON, 100, 400, &ui_PaymentSuccess_S5_screen_init);
-        atTheQrStaticScreen = true;
-      }
-      vTaskDelay(20);
-      audioConnecttoSpeech((const char *)jsondata["message"], "vi-VN");
-      countNumberShowDynmicQR = 1;
+   
     }
     else if (msgType == "N16")
     {
       // Store payment information
       storePaymentInfo(str, true);
       // log_i("staticQR %s", clientHandler.getStaticQR().c_str());
-      lv_label_set_text(ui_LinkWebSite, clientHandler.getHomePage().c_str());
-      switchToStaticQR(false, clientHandler.getStaticQR().c_str());
-      vTaskDelay(20);
+    
       isSyncToServer = GET_STATIC_QR_DONE;
-      audioConnecttoSD("/SamplesMP3/SyncBoxSuccess.mp3");
       atTheQrStaticScreen = true;
     }
     else if (msgType == "N17")
     {
       // log_i("receive QR dynamic \n");
-      switchToDynamicQR(jsondata);
-      vTaskDelay(50);
-      audioConnecttoSD("/SamplesMP3/TryQR.mp3");
+    
       atTheQrStaticScreen = false;
     }
     else if (msgType == "N12")
     {
       // log_i("Cancel QR dynamic \n");
-      countNumberShowDynmicQR = 1;
+   
       String transactionReceiveIdCancel = static_cast<const char *>(jsondata["transactionReceiveId"]);
       if (transactionReceiveIdCancel == transactionReceiveIdQrDynamic)
       {
 
-        lv_label_set_text(ui_Label_Succesful, "Đã huỷ QRCode!");
-        lv_label_set_text(ui_SoTienDaThanhToan, "...");
-        _ui_screen_change(&ui_PaymentSuccess_S5, LV_SCR_LOAD_ANIM_FADE_ON, 100, 400, &ui_PaymentSuccess_S5_screen_init);
       }
     }
   }
@@ -484,8 +266,7 @@ void reconnectMqttBroker()
 }
 void TaskMqttClient(void *pvParameters)
 {
-  vTaskDelay(500);
-  xSemaphoreTake(mutex, portMAX_DELAY);
+ 
   // connect socket server
 
   client.setBufferSize(512);
@@ -533,26 +314,8 @@ void TaskMqttClient(void *pvParameters)
       reconnectMqttBroker();
     }
     client.loop();
-    vTaskDelay(100);
   }
-  vTaskDelete(NULL);
-}
-
-lv_obj_t *createQrCode(const char *data, lv_obj_t *container, lv_coord_t size, lv_color_t color, bool createBorder)
-{
-  lv_obj_t *qr = lv_qrcode_create(container, size, lv_color_hex3(0x000), lv_color_hex3(0xFFF));
-  lv_obj_set_align(qr, LV_ALIGN_CENTER);
-  lv_obj_add_flag(qr, LV_OBJ_FLAG_ADV_HITTEST); /// Flags
-  /*Set data*/
-  if (createBorder == true)
-  {
-    lv_obj_set_style_border_color(qr, color, 0);
-    lv_obj_set_style_border_width(qr, 5, 0);
-    lv_obj_set_style_radius(qr, 10, LV_PART_MAIN | LV_STATE_DEFAULT);
-  }
-  lv_obj_set_style_bg_color(qr, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_qrcode_update(qr, data, strlen(data));
-  return qr;
+ 
 }
 
 void updateLocalTime()
@@ -566,39 +329,9 @@ void updateLocalTime()
   char currentTime[20];
   strftime(currentTime, 20, "%H:%M %d-%m-%Y", &timeinfo);
   String lable = String(currentTime);
-  lv_label_set_text(ui_Date2, lable.c_str());
-}
-void timerApi_handler(lv_timer_t *timer)
-{
-  LV_UNUSED(timer);
-  updateLocalTime();
+
 }
 
-lv_obj_t *lv_create_list_deviceInfo(lv_obj_t *obj)
-{
-  /*Create a list*/
-  lv_obj_t *list1 = lv_list_create(obj);
-  lv_obj_set_size(list1, 236, 170);
-  lv_obj_center(list1);
-
-  /*Add buttons to the list*/
-  lv_obj_t *btn;
-  lv_obj_t *title = lv_list_add_text(list1, "Thông tin thiết bị");
-  lv_obj_set_style_text_font(title, &ui_font_arialbold16, LV_PART_MAIN | LV_STATE_DEFAULT);
-  String message;
-  // SSID infor
-  message = "SSID: " + String(wifiManager.getSSID());
-  btn = lv_list_add_btn(list1, NULL, message.c_str());
-
-  // IP info
-  message = "IP: " + wifiManager.getIPAddress();
-  btn = lv_list_add_btn(list1, NULL, message.c_str());
-
-  // MacAddress infor
-  message = "Mac: " + clientHandler.getMacAddress();
-  btn = lv_list_add_btn(list1, NULL, message.c_str());
-  return list1;
-}
 
 void startWebServer()
 {
@@ -634,7 +367,7 @@ void startWebServer()
     int params = request->params();
     for (int i = 0; i < params; i++)
     {
-      AsyncWebParameter *p = request->getParam(i);
+      const AsyncWebParameter *p = request->getParam(i);
       if (p->isPost())
       {
         // HTTP POST ssid value
@@ -673,7 +406,7 @@ void startWebServer()
                 int indexChannelDelete = 0;
                 for (int i = 0; i < params; i++)
                 {
-                  AsyncWebParameter *p = request->getParam(i);
+                  const AsyncWebParameter *p = request->getParam(i);
                   
                   
                     if (p->name() == "IndexChannelDelete")
@@ -694,7 +427,7 @@ void startWebServer()
                 String PassWordEdit = "";
                 for (int i = 0; i < params; i++)
                 {
-                  AsyncWebParameter *p = request->getParam(i);
+                  const AsyncWebParameter *p = request->getParam(i);
                   
                   
                     if (p->name() == "IndexChannelEdit")
