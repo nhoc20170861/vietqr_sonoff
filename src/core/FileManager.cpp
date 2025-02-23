@@ -1,14 +1,15 @@
 #include "FileManager.h"
+#include "logger.h"
 // FileManager fileManager;
 void FileManager::init()
 {
   if (!LittleFS.begin())
   {
-    Serial.println("An error has occurred while mounting LittleLittleFS");
+    log_e("An error has occurred while mounting LittleLittleFS");
     return;
   }
-  // Serial.println("File mounted successfully");
-  listDir("/", 3); // List the directories up to one level beginning at the root directory
+  log_i("File mounted successfully");
+  // listDir("/", 3); // List the directories up to one level beginning at the root directory
 }
 
 // Read File from LittleLittleFS

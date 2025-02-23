@@ -9,7 +9,9 @@ ClientHandler clientHandler;
 
 // Calculate MD5
 static bool getMD5(uint8_t *data, uint16_t len, char *output)
-{  if (output == NULL) return false; // Prevent null pointer issues
+{
+    if (output == NULL)
+        return false; // Prevent null pointer issues
 
     MD5Builder md5;
     md5.begin();
@@ -51,12 +53,6 @@ void ClientHandler::init()
     _macAddr = String(Mac_address);
     log_i("Mac_address, %s\n", Mac_address);
     sync_response_topic += _macAddr;
-
-    // uint8_t MacAddress[8];
-    // if (esp_efuse_mac_get_default(MacAddress) != ESP_OK)
-    //     ESP_LOGE(TAG, "Unable to read MAC address");
-    // else
-    //     ESP_LOGE(TAG, "MAC address: 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X", (uint16_t)MacAddress[0], (uint16_t)MacAddress[1], (uint16_t)MacAddress[2], (uint16_t)MacAddress[3], (uint16_t)MacAddress[4], (uint16_t)MacAddress[5], (uint16_t)MacAddress[6], (uint16_t)MacAddress[7]);
 }
 
 String ClientHandler::calculateChecksum()

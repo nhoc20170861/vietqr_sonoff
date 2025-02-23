@@ -7,6 +7,7 @@
 #include "SD.h"
 #include "FileManager.h"
 #include "ArduinoJson.h"
+#include "logger.h"
 #define EEPROM_SIZE 128
 #define EEPROM_ADDR_BRIGHTNESS_LEVEL 0
 #define EEPROM_ADDR_VOLUME_LEVEL 4
@@ -45,7 +46,7 @@ public:
     StaticJsonDocument<500> paymenInfoJson;
 
 public:
-    Config(){};
+    Config() {};
     void saveWIFICredentialEEPROM(String data);
     String loadWIFICredentialEEPROM();
     void init();
@@ -58,6 +59,7 @@ private:
     const char paymentInfoPath[25] = "/config/paymentInfo.json";
     const char boxIdPath[18] = "/config/boxId.txt";
     const char qrCertificatePath[26] = "/config/qrCertificate.txt";
+    const char settingPath[21] = "/config/setting.json"; // lưu các setting ve thời gian
 
     template <class T>
     int eepromWrite(int addrOffset, const T &value);
@@ -82,6 +84,11 @@ public:
 
     String readBoxId();
     void writeBoxId(const char *data);
+
+    String readSetting();
+    void writeSettingDefault();
+    void writeSetting(const char *message);
+    int Ton, Toff, fulse_10K, fulse_20K, fulse_50K, fulse_100K, fulse_200K, fulse_500K;
 };
 
 extern Config config;
